@@ -1,154 +1,131 @@
+'''This is a sample code for the simulations of the paper:
+Bozorgasl, Zavareh and Chen, Hao, Wav-KAN: Wavelet Kolmogorov-Arnold Networks (May, 2024)
+
+https://arxiv.org/abs/2405.12832
+and also available at:
+https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4835325
+We used efficient KAN notation and some part of the code:https://github.com/Blealtan/efficient-kan
+
+'''
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
+import torch.optim as optim
+import torchvision
+import torchvision.transforms as transforms
+from torch.utils.data import DataLoader
+from tqdm import tqdm
 import math
 
-
-class KANLinear(torch.nn.Module):
-    def __init__(
-        self,
-        in_features,
-        out_features,
-        grid_size=5,
-        spline_order=3,
-        scale_noise=0.1,
-        scale_base=1.0,
-        scale_spline=1.0,
-        enable_standalone_scale_spline=True,
-        base_activation=torch.nn.SiLU,
-        grid_eps=0.02,
-        grid_range=[-1, 1],
-    ):
+class KANLinear(nn.Module):
+    def __init__(self, in_features, out_features, wavelet_type='mexican_hat'):
         super(KANLinear, self).__init__()
         self.in_features = in_features
         self.out_features = out_features
-        self.grid_size = grid_size
-        self.spline_order = spline_order
+        self.wavelet_type = wavelet_type
 
-        h = (grid_range[1] - grid_range[0]) / grid_size
-        grid = (
-            (
-                torch.arange(-spline_order, grid_size + spline_order + 1) * h
-                + grid_range[0]
-            )
-            .expand(in_features, -1)
-            .contiguous()
-        )
-        self.register_buffer("grid", grid)
+        # Parameters for wavelet transformation
+        self.scale = nn.Parameter(torch.ones(out_features, in_features))
+        self.translation = nn.Parameter(torch.zeros(out_features, in_features))
 
-        self.base_weight = torch.nn.Parameter(torch.Tensor(out_features, in_features))
-        self.spline_weight = torch.nn.Parameter(
-            torch.Tensor(out_features, in_features, grid_size + spline_order)
-        )
-        if enable_standalone_scale_spline:
-            self.spline_scaler = torch.nn.Parameter(
-                torch.Tensor(out_features, in_features)
-            )
+        # Linear weights for combining outputs
+        #self.weight = nn.Parameter(torch.Tensor(out_features, in_features))
+        self.weight1 = nn.Parameter(torch.Tensor(out_features, in_features)) #not used; you may like to use it for wieghting base activation and adding it like Spl-KAN paper
+        self.wavelet_weights = nn.Parameter(torch.Tensor(out_features, in_features))
 
-        self.scale_noise = scale_noise
-        self.scale_base = scale_base
-        self.scale_spline = scale_spline
-        self.enable_standalone_scale_spline = enable_standalone_scale_spline
-        self.base_activation = base_activation()
-        self.grid_eps = grid_eps
+        nn.init.kaiming_uniform_(self.wavelet_weights, a=math.sqrt(5))
+        nn.init.kaiming_uniform_(self.weight1, a=math.sqrt(5))
 
-        self.reset_parameters()
+        # Base activation function #not used for this experiment
+        self.base_activation = nn.SiLU()
 
-    def reset_parameters(self):
-        torch.nn.init.kaiming_uniform_(self.base_weight, a=math.sqrt(5) * self.scale_base)
-        with torch.no_grad():
-            noise = (
-                (
-                    torch.rand(self.grid_size + 1, self.in_features, self.out_features)
-                    - 1 / 2
-                )
-                * self.scale_noise
-                / self.grid_size
-            )
-            self.spline_weight.data.copy_(
-                (self.scale_spline if not self.enable_standalone_scale_spline else 1.0)
-                * self.curve2coeff(
-                    self.grid.T[self.spline_order : -self.spline_order],
-                    noise,
-                )
-            )
-            if self.enable_standalone_scale_spline:
-                torch.nn.init.kaiming_uniform_(self.spline_scaler, a=math.sqrt(5) * self.scale_spline)
+        # Batch normalization
+        # self.bn = nn.BatchNorm1d(out_features)
+        self.bn = nn.LayerNorm(out_features)
 
-    def b_splines(self, x: torch.Tensor):
-        assert x.dim() == 2 and x.size(1) == self.in_features
-        grid: torch.Tensor = self.grid
-        x = x.unsqueeze(-1)
-        bases = ((x >= grid[:, :-1]) & (x < grid[:, 1:])).to(x.dtype)
-        for k in range(1, self.spline_order + 1):
-            bases = (
-                (x - grid[:, : -(k + 1)])
-                / (grid[:, k:-1] - grid[:, : -(k + 1)])
-                * bases[:, :, :-1]
-            ) + (
-                (grid[:, k + 1 :] - x)
-                / (grid[:, k + 1 :] - grid[:, 1:(-k)])
-                * bases[:, :, 1:]
-            )
-        assert bases.size() == (
-            x.size(0),
-            self.in_features,
-            self.grid_size + self.spline_order,
-        )
-        return bases.contiguous()
+    def wavelet_transform(self, x):
+        if x.dim() == 2:
+            x_expanded = x.unsqueeze(1)
+        else:
+            x_expanded = x
 
-    def curve2coeff(self, x: torch.Tensor, y: torch.Tensor):
-        assert x.dim() == 2 and x.size(1) == self.in_features
-        assert y.size() == (x.size(0), self.in_features, self.out_features)
+        translation_expanded = self.translation.unsqueeze(0).expand(x.size(0), -1, -1)
+        scale_expanded = self.scale.unsqueeze(0).expand(x.size(0), -1, -1)
+        x_scaled = (x_expanded - translation_expanded) / scale_expanded
 
-        A = self.b_splines(x).transpose(0, 1)
-        B = y.transpose(0, 1)
-        solution = torch.linalg.lstsq(A, B).solution
-        result = solution.permute(2, 0, 1)
+        # Implementation of different wavelet types
+        if self.wavelet_type == 'mexican_hat':
+            term1 = ((x_scaled ** 2)-1)
+            term2 = torch.exp(-0.5 * x_scaled ** 2)
+            wavelet = (2 / (math.sqrt(3) * math.pi**0.25)) * term1 * term2
+            wavelet_weighted = wavelet * self.wavelet_weights.unsqueeze(0).expand_as(wavelet)
+            wavelet_output = wavelet_weighted.sum(dim=2)
+        elif self.wavelet_type == 'morlet':
+            omega0 = 5.0  # Central frequency
+            real = torch.cos(omega0 * x_scaled)
+            envelope = torch.exp(-0.5 * x_scaled ** 2)
+            wavelet = envelope * real
+            wavelet_weighted = wavelet * self.wavelet_weights.unsqueeze(0).expand_as(wavelet)
+            wavelet_output = wavelet_weighted.sum(dim=2)
+            
+        elif self.wavelet_type == 'dog':
+            # Implementing Derivative of Gaussian Wavelet 
+            dog = -x_scaled * torch.exp(-0.5 * x_scaled ** 2)
+            wavelet = dog
+            wavelet_weighted = wavelet * self.wavelet_weights.unsqueeze(0).expand_as(wavelet)
+            wavelet_output = wavelet_weighted.sum(dim=2)
+        elif self.wavelet_type == 'meyer':
+            # Implement Meyer Wavelet here
+            # Constants for the Meyer wavelet transition boundaries
+            v = torch.abs(x_scaled)
+            pi = math.pi
 
-        assert result.size() == (
-            self.out_features,
-            self.in_features,
-            self.grid_size + self.spline_order,
-        )
-        return result.contiguous()
+            def meyer_aux(v):
+                return torch.where(v <= 1/2,torch.ones_like(v),torch.where(v >= 1,torch.zeros_like(v),torch.cos(pi / 2 * nu(2 * v - 1))))
 
-    @property
-    def scaled_spline_weight(self):
-        return self.spline_weight * (
-            self.spline_scaler.unsqueeze(-1)
-            if self.enable_standalone_scale_spline
-            else 1.0
-        )
+            def nu(t):
+                return t**4 * (35 - 84*t + 70*t**2 - 20*t**3)
+            # Meyer wavelet calculation using the auxiliary function
+            wavelet = torch.sin(pi * v) * meyer_aux(v)
+            wavelet_weighted = wavelet * self.wavelet_weights.unsqueeze(0).expand_as(wavelet)
+            wavelet_output = wavelet_weighted.sum(dim=2)
+        elif self.wavelet_type == 'shannon':
+            # Windowing the sinc function to limit its support
+            pi = math.pi
+            sinc = torch.sinc(x_scaled / pi)  # sinc(x) = sin(pi*x) / (pi*x)
 
-    def forward(self, x: torch.Tensor):
-        assert x.size(-1) == self.in_features
-        original_shape = x.shape
-        x = x.reshape(-1, self.in_features)
+            # Applying a Hamming window to limit the infinite support of the sinc function
+            window = torch.hamming_window(x_scaled.size(-1), periodic=False, dtype=x_scaled.dtype, device=x_scaled.device)
+            # Shannon wavelet is the product of the sinc function and the window
+            wavelet = sinc * window
+            wavelet_weighted = wavelet * self.wavelet_weights.unsqueeze(0).expand_as(wavelet)
+            wavelet_output = wavelet_weighted.sum(dim=2)
+            #You can try many more wavelet types ...
+        else:
+            raise ValueError("Unsupported wavelet type")
 
-        base_output = F.linear(self.base_activation(x), self.base_weight)
-        spline_output = F.linear(
-            self.b_splines(x).view(x.size(0), -1),
-            self.scaled_spline_weight.view(self.out_features, -1),
-        )
-        output = base_output + spline_output
-        output = output.reshape(*original_shape[:-1], self.out_features)
-        return output
+        return wavelet_output
 
+    def forward(self, x):
+        wavelet_output = self.wavelet_transform(x)
+        #You may like test the cases like Spl-KAN
+        #wav_output = F.linear(wavelet_output, self.weight)
+        #base_output = F.linear(self.base_activation(x), self.weight1)
 
-class KAN(torch.nn.Module):
-    def __init__(self, layer_sizes, **kwargs):
-        super().__init__()
-        self.layers = torch.nn.ModuleList()
-        for in_f, out_f in zip(layer_sizes[:-1], layer_sizes[1:]):
-            self.layers.append(KANLinear(in_f, out_f, **kwargs))
+        base_output = F.linear(x, self.weight1)
+        combined_output =  wavelet_output #+ base_output 
+
+        # Apply batch normalization
+        return self.bn(combined_output)
+
+class KAN(nn.Module):
+    def __init__(self, layers_hidden, wavelet_type='mexican_hat'):
+        super(KAN, self).__init__()
+        self.layers = nn.ModuleList()
+        for in_features, out_features in zip(layers_hidden[:-1], layers_hidden[1:]):
+            self.layers.append(KANLinear(in_features, out_features, wavelet_type))
 
     def forward(self, x):
         for layer in self.layers:
             x = layer(x)
         return x
-
-    def regularization_loss(self, regularize_activation=1.0, regularize_entropy=1.0):
-        return sum(
-            layer.regularization_loss(regularize_activation, regularize_entropy)
-            for layer in self.layers
-        )

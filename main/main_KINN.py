@@ -138,17 +138,8 @@ def main():
     # Set seed for reproducibility
     set_seed(args.seed)
     # Create the model and optimizer
-    model = KAN(
-        layer_sizes=[1, args.num_hidden_layers, args.num_hidden_layers, 1],
-        grid_size=5,
-        spline_order=3,
-        scale_noise=0.1,
-        scale_base=1.0,
-        scale_spline=1.0,
-        base_activation=torch.nn.Tanh,
-        grid_eps=0.02,
-        grid_range=[-1, 1]
-    )
+    model = KAN(layers_hidden=[1, 64, 64, 1], wavelet_type='mexican_hat')
+
 
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
     

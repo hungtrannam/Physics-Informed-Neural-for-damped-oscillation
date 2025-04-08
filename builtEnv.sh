@@ -31,7 +31,8 @@ pip install --no-cache-dir \
     numpy matplotlib pandas \
     ipykernel tqdm seaborn optuna jupyter\
     argparse imageio torch scikit-learn \
-    torchdiffeq
+    torchdiffeq torchvision \
+    torchmetrics
 
 ############## Export the list of installed packages to requirements.txt ##############
 echo "Exporting installed packages to requirements.txt..."
