@@ -1,7 +1,12 @@
+import sys
+import os
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(PROJECT_ROOT)
 from utils.data_provider import GAMMA, OMEGA, t_data, u_data
 from utils.config import get_args, set_seed
-from utils.utils import evaluate_model, evaluate_loss_PINN
-from models.PINN import PINN
+from utils.utils import evaluate_model, evaluate_loss_FCN
+from models.FCN import FCN
 
 
 import torch
@@ -14,15 +19,9 @@ from torch.utils.data import DataLoader, TensorDataset
 import datetime
 
 
-
-def physics_loss(model, t, omega_eq, omega_bc, omega_dt, t_data=None, u_data=None):
+def physics_loss(model, t, omega_dt, t_data=None, u_data=None):
     t.requires_grad = True
     u_pred = model(t)
-
-    u_t = torch.autograd.grad(u_pred, t, grad_outputs=torch.ones_like(u_pred), create_graph=True)[0]
-    u_tt = torch.autograd.grad(u_t, t, grad_outputs=torch.ones_like(u_t), create_graph=True)[0]
-
-    loss_eq = torch.mean((u_tt + 2*GAMMA*u_t + OMEGA**2*u_pred)**2)
 
     if t_data is not None and u_data is not None:
         u_pred_data = model(t_data)
@@ -31,18 +30,10 @@ def physics_loss(model, t, omega_eq, omega_bc, omega_dt, t_data=None, u_data=Non
         u_exact = torch.exp(-GAMMA * t) * torch.cos(OMEGA * t)
         loss_data = torch.mean((u_pred - u_exact)**2)
 
-    t_bc = torch.tensor([[0.0]], dtype=torch.float32, requires_grad=True)
-    u_bc_pred = model(t_bc)
-    u_bc_exact = torch.tensor([[1.0]], dtype=torch.float32)
-    loss_bc_1 = torch.mean((u_bc_pred - u_bc_exact)**2)
-    u_t_bc = torch.autograd.grad(u_bc_pred, t_bc, grad_outputs=torch.ones_like(u_bc_pred), create_graph=True)[0]
-    loss_bc_2 = torch.mean((u_t_bc - 0.0)**2)
-    loss_bc = loss_bc_1 + loss_bc_2
+    total_loss = omega_dt * loss_data
+    return total_loss, loss_data
 
-    total_loss = omega_eq * loss_eq + omega_bc * loss_bc + omega_dt * loss_data
-    return total_loss, loss_eq, loss_bc, loss_data
-
-def train_PINN(model, optimizer, num_epochs=10000, omega_eq=1, omega_bc=1, omega_dt=1, output_dir='runs', use_Vis=False):
+def train_FCN(model, optimizer, num_epochs=10000, omega_dt=1, output_dir='runs', use_Vis=False):
     t_train = torch.linspace(0.0, 15.0, 500).reshape(-1, 1)
     dataset = TensorDataset(t_train)
     dataloader = DataLoader(dataset, batch_size=len(dataset), shuffle=False)
@@ -50,14 +41,14 @@ def train_PINN(model, optimizer, num_epochs=10000, omega_eq=1, omega_bc=1, omega
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=10, verbose=True)
 
     frames = []
-    loss_history, data_loss_history, bc_loss_history, eq_loss_history = [], [], [], []
+    loss_history, data_loss_history= [], []
 
     print("Training with Adam...")
     for epoch in range(num_epochs):
         for batch in dataloader:
             t_batch = batch[0]
             optimizer.zero_grad()
-            loss_pinn, loss_eq, loss_bc, loss_data = physics_loss(model, t_batch, omega_eq, omega_bc, omega_dt, t_data, u_data)
+            loss_pinn, loss_data = physics_loss(model, t_batch, omega_dt, t_data, u_data)
             loss_pinn.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=.1)
             optimizer.step()
@@ -65,8 +56,6 @@ def train_PINN(model, optimizer, num_epochs=10000, omega_eq=1, omega_bc=1, omega
 
         loss_history.append(loss_pinn.item())
         data_loss_history.append(loss_data.item())
-        bc_loss_history.append(loss_bc.item())
-        eq_loss_history.append(loss_eq.item())
 
         if epoch % 100 == 0:
             print(f'Epoch {epoch}: Loss = {loss_pinn.item()}, LR = {scheduler.get_last_lr()[0]}')
@@ -96,7 +85,7 @@ def train_PINN(model, optimizer, num_epochs=10000, omega_eq=1, omega_bc=1, omega
 
     def closure():
         optimizer_lbfgs.zero_grad()
-        loss, _, _, _ = physics_loss(model, t_train, omega_eq, omega_bc, omega_dt, t_data, u_data)
+        loss, _= physics_loss(model, t_train, omega_dt, t_data, u_data)
         loss.backward()
         return loss
 
@@ -112,18 +101,19 @@ def train_PINN(model, optimizer, num_epochs=10000, omega_eq=1, omega_bc=1, omega
     for _ in range(5000):
         optimizer_lbfgs.step(closure)
 
-    final_loss, _, _, _ = physics_loss(model, t_train, omega_eq, omega_bc, omega_dt, t_data, u_data)
+    final_loss, _ = physics_loss(model, t_train, omega_dt, t_data, u_data)
     print(f'Final loss after LBFGS: {final_loss.item()}')
 
     
     # Save the model
     model_path = os.path.join(output_dir, 'model.pth')
     torch.save(model.state_dict(), model_path)
-    evaluate_loss_PINN(num_epochs, loss_history, data_loss_history, bc_loss_history, eq_loss_history, output_dir)
+    evaluate_loss_FCN(num_epochs, loss_history, data_loss_history,output_dir)
+
 
 def main():
-    run_id = f"PINN_{datetime.datetime.now().strftime('%d_%m___%H_%M')}"
-    output_dir = os.path.join("runs/PINN2", run_id)
+    run_id = f"FCN_{datetime.datetime.now().strftime('%d_%m___%H_%M')}"
+    output_dir = os.path.join("runs/FCN", run_id)
     os.makedirs(output_dir, exist_ok=True)
 
     # Get the arguments
@@ -133,16 +123,16 @@ def main():
     # Set seed for reproducibility
     set_seed(args.seed)
     # Create the model and optimizer
-    model = PINN(args.num_hidden_layers, args.num_neurons,args.dropout_rate, args.activation_name)
+    model = FCN(args.num_hidden_layers, args.num_neurons, args.dropout_rate, args.activation_name)
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
     
 
     print('Training model...')
-    train_PINN(model, optimizer, 
+    train_FCN(model, optimizer, 
                num_epochs=args.num_epochs, 
-               # batch_size=args.batch_size, 
-               omega_eq=args.omega_eq, 
-               omega_bc = args.omega_bc, 
+            # batch_size=args.batch_size, 
+            # omega_eq=args.omega_eq, 
+            # omega_bc = args.omega_bc, 
                omega_dt=args.omega_dt,
                output_dir=output_dir)
     

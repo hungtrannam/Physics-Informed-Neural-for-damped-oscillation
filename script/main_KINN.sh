@@ -1,27 +1,21 @@
 #!/bin/bash
 
 # === CONFIGURATION ===
-PYTHON_FILE="main/main_KINN.py"
-LOG_FILE="log/KINN_solver2.log"
+CURRENT_DIR=$(pwd)
+PYTHON_FILE="${CURRENT_DIR}/main/main_KINN.py"
+LOG_FILE="${CURRENT_DIR}/log/KINN_sovler.log"
 VENV_DIR=".venv"
 
 # === CLEAN OLD FILES ===
-rm -rf __pycache__
 rm -f "$LOG_FILE"
 
-
-# === CHECK VENV ===
-if [ ! -d "$VENV_DIR" ]; then
-    echo "❌ Virtual environment '$VENV_DIR' not found!" | tee -a "$LOG_FILE"
-    exit 1
-fi
-
-# === ACTIVATE VENV ===
-source "$VENV_DIR/bin/activate"
+# # === ACTIVATE VENV ===
+# source "$VENV_DIR/bin/activate"
 
 # === GET USER INPUT ===
 read -p "Enter Seed (default: 42): " SEED
 read -p "Enter Dropout Rate (default: 0.000): " DROPOUT
+read -p "Enter Learning Rate Scheduler (default: 0.000): " LR_SCHEDULER
 read -p "Enter Number of Hidden Layer (default: 6): " HIDDEN
 read -p "Enter Activation (default: 'tanh'): " ACTIVATION
 read -p "Enter Number of Neurons (default: 64): " NEURONS
@@ -37,6 +31,7 @@ read -p "Enter Omega dt (default: 1.0): " O3
 SEED=${SEED:-42}
 DROPOUT=${DROPOUT:-0.000}
 HIDDEN=${HIDDEN:-6}
+LR_SCHEDULER=${LR_SCHEDULER:-'plateau'}
 ACTIVATION=${ACTIVATION:-'tanh'}
 NEURONS=${NEURONS:-64}
 LR=${LR:-0.001}
@@ -54,6 +49,7 @@ echo "Dropout = $DROPOUT" | tee -a "$LOG_FILE"
 echo "Hidden Layer = $HIDDEN" | tee -a "$LOG_FILE"
 echo "Activation = $ACTIVATION" | tee -a "$LOG_FILE"
 echo "Neurons = $NEURONS" | tee -a "$LOG_FILE"
+echo "Learning Rate Scheduler = $LR_SCHEDULER" | tee -a "$LOG_FILE"
 echo "Learning Rate = $LR" | tee -a "$LOG_FILE"
 echo "Weight Decay = $WD" | tee -a "$LOG_FILE"
 echo "Epochs = $EPOCHS" | tee -a "$LOG_FILE"
@@ -68,6 +64,7 @@ python3 "$PYTHON_FILE" \
     --seed "$SEED" \
     --dropout_rate "$DROPOUT" \
     --num_neurons "$NEURONS" \
+    --lr_scheduler "$LR_SCHEDULER" \
     --learning_rate "$LR" \
     --num_hidden_layers "$HIDDEN" \
     --activation "$ACTIVATION" \

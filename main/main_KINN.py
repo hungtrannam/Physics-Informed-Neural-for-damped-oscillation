@@ -1,5 +1,11 @@
-from utils.config import get_args, GAMMA, OMEGA, t_data, u_data
-from utils.utils import evaluate_model, evaluate_loss_PINN, set_seed
+import sys
+import os
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(PROJECT_ROOT)
+from utils.data_provider import GAMMA, OMEGA, t_data, u_data
+from utils.config import get_args, set_seed
+from utils.utils import evaluate_model, evaluate_loss_PINN
 from models.KAN import RBFKAN
 
 

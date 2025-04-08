@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # === CONFIGURATION ===
-PYTHON_FILE="main/main_K_R.py"
-LOG_FILE="log/SOL_sovler.log"
+CURRENT_DIR=$(pwd)
+PYTHON_FILE="${CURRENT_DIR}/main/main_SOL.py"
+LOG_FILE="${CURRENT_DIR}/log/SOL_sovler.log"
 VENV_DIR=".venv"
 
 # === CLEAN OLD FILES ===

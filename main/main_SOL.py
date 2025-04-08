@@ -1,3 +1,8 @@
+import sys
+import os
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(PROJECT_ROOT)
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
