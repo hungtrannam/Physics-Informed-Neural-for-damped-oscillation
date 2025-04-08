@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # === CONFIGURATION ===
-PYTHON_FILE="main_NeuralODE.py"
+PYTHON_FILE="main/main_NeuralODE.py"
 LOG_FILE="NeuralODE_solver2.log"
 VENV_DIR=".venv"
 

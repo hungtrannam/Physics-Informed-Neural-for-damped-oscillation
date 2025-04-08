@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # === CONFIGURATION ===
-PYTHON_FILE="main_K_R.py"
+PYTHON_FILE="main/main_K_R.py"
 LOG_FILE="log/SOL_sovler.log"
 VENV_DIR=".venv"
 

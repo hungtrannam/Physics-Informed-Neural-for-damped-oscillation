@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # === CONFIGURATION ===
-PYTHON_FILE="main_MLP.py"
+PYTHON_FILE="main/main_MLP.py"
 LOG_FILE="log/MLP_solver2.log"
 VENV_DIR=".venv"
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # === CONFIGURATION ===
-PYTHON_FILE="main_PINN2.py"
+PYTHON_FILE="main/main_PINN2.py"
 LOG_FILE="log/PINN_solver2.log"
 VENV_DIR=".venv"
 

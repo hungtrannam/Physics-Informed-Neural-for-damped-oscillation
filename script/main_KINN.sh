@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # === CONFIGURATION ===
-PYTHON_FILE="main_KINN.py"
+PYTHON_FILE="main/main_KINN.py"
 LOG_FILE="log/KINN_solver2.log"
 VENV_DIR=".venv"
 
