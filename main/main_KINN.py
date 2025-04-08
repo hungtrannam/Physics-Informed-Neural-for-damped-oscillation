@@ -6,7 +6,7 @@ sys.path.append(PROJECT_ROOT)
 from utils.data_provider import GAMMA, OMEGA, t_data, u_data
 from utils.config import get_args, set_seed
 from utils.utils import evaluate_model, evaluate_loss_PINN
-from models.KAN import RBFKAN
+from models.KAN import KAN
 
 
 import torch
@@ -138,10 +138,18 @@ def main():
     # Set seed for reproducibility
     set_seed(args.seed)
     # Create the model and optimizer
-    model = RBFKAN(input_dim=1,
-                   output_dim=1,
-                   hidden_dim=4,
-                   num_centers=100)
+    model = KAN(
+        layer_sizes=[1, args.num_hidden_layers, args.num_hidden_layers, 1],
+        grid_size=5,
+        spline_order=3,
+        scale_noise=0.1,
+        scale_base=1.0,
+        scale_spline=1.0,
+        base_activation=torch.nn.Tanh,
+        grid_eps=0.02,
+        grid_range=[-1, 1]
+    )
+
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
     
 
