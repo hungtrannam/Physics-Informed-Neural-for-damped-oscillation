@@ -5,7 +5,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(PROJECT_ROOT)
 from utils.data_provider import GAMMA, OMEGA, t_data, u_data
 from utils.config import get_args, set_seed
-from utils.utils import evaluate_model, evaluate_loss_PINN
+from utils.vis import evaluate_model, evaluate_loss_PINN
 from models.PINN import PINN
 
 

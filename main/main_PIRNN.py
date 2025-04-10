@@ -6,7 +6,7 @@ sys.path.append(PROJECT_ROOT)
 from utils.data_provider import GAMMA, OMEGA, t_data, u_data
 from utils.config import get_args, set_seed
 from utils.vis import evaluate_model, evaluate_loss_PINN
-from models.KAN import KAN
+from models.PIRNN import PIRNN
 
 
 import torch
@@ -47,12 +47,20 @@ def physics_loss(model, t, omega_eq, omega_bc, omega_dt, t_data=None, u_data=Non
     total_loss = omega_eq * loss_eq + omega_bc * loss_bc + omega_dt * loss_data
     return total_loss, loss_eq, loss_bc, loss_data
 
-def train_KAN(model, optimizer, num_epochs=10000, omega_eq=1, omega_bc=1, omega_dt=1, output_dir='runs', use_Vis=False):
+def train_PINN(model, optimizer, num_epochs=10000, lr_scheduler=None, omega_eq=1, omega_bc=1, omega_dt=1, output_dir='runs', use_Vis=False):
     t_train = torch.linspace(0.0, 15.0, 500).reshape(-1, 1)
     dataset = TensorDataset(t_train)
     dataloader = DataLoader(dataset, batch_size=len(dataset), shuffle=False)
 
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=10, verbose=True)
+    if lr_scheduler == 'plateau':
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, mode='min', factor=.5, patience=10, verbose=True
+        )
+    elif lr_scheduler == 'step':
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1000, gamma=.5)
+    else:
+        scheduler = None
+
 
     frames = []
     loss_history, data_loss_history, bc_loss_history, eq_loss_history = [], [], [], []
@@ -62,19 +70,23 @@ def train_KAN(model, optimizer, num_epochs=10000, omega_eq=1, omega_bc=1, omega_
         for batch in dataloader:
             t_batch = batch[0]
             optimizer.zero_grad()
-            loss_KAN, loss_eq, loss_bc, loss_data = physics_loss(model, t_batch, omega_eq, omega_bc, omega_dt, t_data, u_data)
-            loss_KAN.backward()
+            loss_pinn, loss_eq, loss_bc, loss_data = physics_loss(model, t_batch, omega_eq, omega_bc, omega_dt, t_data, u_data)
+            loss_pinn.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=.1)
             optimizer.step()
-        scheduler.step(loss_KAN.item())
+        if lr_scheduler == 'plateau':
+            scheduler.step(loss_pinn.item())
+        elif lr_scheduler == 'step':
+            scheduler.step()
 
-        loss_history.append(loss_KAN.item())
+
+        loss_history.append(loss_pinn.item())
         data_loss_history.append(loss_data.item())
         bc_loss_history.append(loss_bc.item())
         eq_loss_history.append(loss_eq.item())
 
         if epoch % 100 == 0:
-            print(f'Epoch {epoch}: Loss = {loss_KAN.item()}, LR = {scheduler.get_last_lr()[0]}')
+            print(f'Epoch {epoch}: Loss = {loss_pinn.item()}, LR = {scheduler.get_last_lr()[0]}')
             if use_Vis:
                 img_dir = os.path.join(output_dir, "frames")
                 os.makedirs(img_dir, exist_ok=True)
@@ -127,8 +139,8 @@ def train_KAN(model, optimizer, num_epochs=10000, omega_eq=1, omega_bc=1, omega_
     evaluate_loss_PINN(num_epochs, loss_history, data_loss_history, bc_loss_history, eq_loss_history, output_dir)
 
 def main():
-    run_id = f"KINN_{datetime.datetime.now().strftime('%d_%m___%H_%M')}"
-    output_dir = os.path.join("runs/KAN", run_id)
+    run_id = f"PIRNN_{datetime.datetime.now().strftime('%d_%m___%H_%M')}"
+    output_dir = os.path.join("runs/PIRNN", run_id)
     os.makedirs(output_dir, exist_ok=True)
 
     # Get the arguments
@@ -138,15 +150,17 @@ def main():
     # Set seed for reproducibility
     set_seed(args.seed)
     # Create the model and optimizer
-    model = KAN(layers_hidden=[1, 64, 64, 1], wavelet_type='mexican_hat')
-
-
+    model = PIRNN(num_hidden_layers=args.num_hidden_layers,
+                  num_neurons=args.num_neurons,
+                  dropout_rate=args.dropout_rate,
+                  rnn_type=args.rnn_type)
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
     
 
     print('Training model...')
-    train_KAN(model, optimizer, 
+    train_PINN(model, optimizer, 
                num_epochs=args.num_epochs, 
+                lr_scheduler=args.lr_scheduler,
                # batch_size=args.batch_size, 
                omega_eq=args.omega_eq, 
                omega_bc = args.omega_bc, 

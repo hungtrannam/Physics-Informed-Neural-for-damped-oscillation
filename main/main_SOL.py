@@ -3,12 +3,10 @@ import os
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(PROJECT_ROOT)
-import argparse
+from utils.data_provider import GAMMA, OMEGA, t_data, u_data
+from utils.config import get_args, set_seed
 import numpy as np
 import matplotlib.pyplot as plt
-from utils.utils import set_seed
-from utils.config import GAMMA, OMEGA
-import os
 
 # 1. Định nghĩa hệ phương trình dao động tắt dần
 def damped_oscillation(t, y):

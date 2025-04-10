@@ -2,8 +2,8 @@
 
 # === CONFIGURATION ===
 CURRENT_DIR=$(pwd)
-PYTHON_FILE="${CURRENT_DIR}/main/main_PINN.py"
-LOG_FILE="${CURRENT_DIR}/log/PINN_sovler.log"
+PYTHON_FILE="${CURRENT_DIR}/main/main_PIRNN.py"
+LOG_FILE="${CURRENT_DIR}/log/PIRNN_sovler.log"
 VENV_DIR=".venv"
 
 # === CLEAN OLD FILES ===
@@ -30,7 +30,6 @@ read -p "Enter Number of Neurons (default: 64): " NEURONS
 read -p "Enter Learning Rate (default: 0.001): " LR
 read -p "Enter Weight Decay (default: 0.0001): " WD
 read -p "Enter Epochs (default: 10000): " EPOCHS
-read -p "Enter RNN Type (default: 'LSTM'): " RNN_TYPE
 # read -p "Enter Batch Size (default: 32): " BATCH
 read -p "Enter Omega eq (default: 1.0): " O1
 read -p "Enter Omega bc (default: 1.0): " O2
@@ -42,7 +41,6 @@ DROPOUT=${DROPOUT:-0.000}
 HIDDEN=${HIDDEN:-6}
 LR_SCHEDULER=${LR_SCHEDULER:-'plateau'}
 ACTIVATION=${ACTIVATION:-'swish'}
-RNN_TYPE=${RNN_TYPE:-'LSTM'}
 NEURONS=${NEURONS:-64}
 LR=${LR:-0.001}
 WD=${WD:-0.0001}
@@ -55,7 +53,6 @@ O3=${O3:-1.0}
 # === START LOGGING ===
 echo "Running $PYTHON_FILE with parameters:" | tee "$LOG_FILE"
 echo "Seed = $SEED" | tee -a "$LOG_FILE"
-echo "RNN Type = $RNN_TYPE" | tee -a "$LOG_FILE"
 echo "Dropout = $DROPOUT" | tee -a "$LOG_FILE"
 echo "Hidden Layer = $HIDDEN" | tee -a "$LOG_FILE"
 echo "Activation = $ACTIVATION" | tee -a "$LOG_FILE"
@@ -74,7 +71,6 @@ start_time=$(date +%s)
 python3 "$PYTHON_FILE" \
     --seed "$SEED" \
     --dropout_rate "$DROPOUT" \
-    --rnn_type "$RNN_TYPE" \
     --num_neurons "$NEURONS" \
     --learning_rate "$LR" \
     --lr_scheduler "$LR_SCHEDULER" \

@@ -20,6 +20,7 @@ def get_args(output_dir):
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--lr_scheduler', type=str, default='plateau', choices=['plateau', 'step', 'none'])
+    parser.add_argument('--rnn_type', type=str, default='LSTM', choices=['RNN', 'LSTM', 'GRU'])
     parser.add_argument('--activation_name', type=str, default='swish')
     parser.add_argument('--num_hidden_layers', type=int, default=6)
     parser.add_argument('--dropout_rate', type=float, default=0.000)
