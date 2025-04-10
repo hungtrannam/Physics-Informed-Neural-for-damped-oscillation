@@ -1,0 +1,15 @@
+{
+    "seed": 42,
+    "lr_scheduler": "plateau",
+    "rnn_type": "LSTM",
+    "activation_name": "swish",
+    "num_hidden_layers": 2,
+    "dropout_rate": 0.0,
+    "num_neurons": 4,
+    "num_epochs": 5000,
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001,
+    "omega_eq": 1.0,
+    "omega_bc": 1.0,
+    "omega_dt": 1.0
+}

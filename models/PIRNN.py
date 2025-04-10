@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 class PIRNN(nn.Module):
-    def __init__(self, num_hidden_layers, num_neurons, dropout_rate=0.0, rnn_type='LSTM'):
+    def __init__(self, num_hidden_layers, num_neurons, dropout_rate=0.0, rnn_type='GRU'):
         super(PIRNN, self).__init__()
 
         RNN_LAYER = {
