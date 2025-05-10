@@ -14,7 +14,7 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
 from utils.losses import comp_loss
 
-def train(model, optimizer, num_epochs=10000, output_dir='runs', use_Vis=False):
+def train(model, optimizer, num_epochs=10000, args=None, output_dir='runs', use_Vis=False):
     t_train = torch.linspace(0.0, 15.0, 500).reshape(-1, 1)
     dataset = TensorDataset(t_train)
     dataloader = DataLoader(dataset, batch_size=len(dataset), shuffle=False)
@@ -30,8 +30,7 @@ def train(model, optimizer, num_epochs=10000, output_dir='runs', use_Vis=False):
             t_batch = batch[0]
             optimizer.zero_grad()
             total_loss, loss_eq, loss_bc, loss_data = comp_loss(
-                model, t_batch, t_data=t_data, u_data=u_data, mode="PINN"
-            )
+                model, t_batch, t_data=t_data, u_data=u_data, args=args)
             total_loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=0.1)
             optimizer.step()

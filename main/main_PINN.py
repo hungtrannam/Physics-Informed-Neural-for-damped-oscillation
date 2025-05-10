@@ -1,13 +1,14 @@
 
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, PROJECT_ROOT)
 
 
 from utils.config import get_args, set_seed
 from data.data_provider import t_data, u_data
 from models.PINN import PINN
-from exp.exp_main import train_PINN
+from exp.exp_main import train
 from utils.vis import evaluate_model
 import torch
 import torch.optim as optim
@@ -25,7 +26,7 @@ def main():
     model = PINN(args.num_hidden_layers, args.num_neurons, args.dropout_rate, args.activation_name)
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
 
-    train_PINN(model, optimizer, t_data, u_data, args, output_dir)
+    train(model, optimizer, num_epochs=args.num_epochs, args=args, output_dir=output_dir)
     evaluate_model(model, output_dir=output_dir)
 
     print('Training complete!')
