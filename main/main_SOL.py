@@ -3,7 +3,7 @@ import os
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(PROJECT_ROOT)
-from utils.data_provider import GAMMA, OMEGA, t_data, u_data
+from data.data_provider import GAMMA, OMEGA, t_data, u_data
 from utils.config import get_args, set_seed
 import numpy as np
 import matplotlib.pyplot as plt

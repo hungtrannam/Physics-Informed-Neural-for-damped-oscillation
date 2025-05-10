@@ -2,7 +2,7 @@
 
 # === CONFIGURATION ===
 CURRENT_DIR=$(pwd)
-PYTHON_FILE="${CURRENT_DIR}/main/main_PINN.py"
+PYTHON_FILE="${CURRENT_DIR}/main_PINN.py"
 LOG_FILE="${CURRENT_DIR}/log/PINN_sovler.log"
 VENV_DIR=".venv"
 

@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 from sklearn.metrics import mean_squared_error
-from utils.data_provider import GAMMA, OMEGA, t_data, u_data
+from data.data_provider import GAMMA, OMEGA, t_data, u_data
 
 
 def evaluate_model(model, output_dir):
