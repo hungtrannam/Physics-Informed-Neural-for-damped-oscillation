@@ -1,0 +1,17 @@
+{
+    "seed": 42,
+    "lr_scheduler": "plateau",
+    "nn_type": "TransformerEncoder",
+    "activation_name": "swish",
+    "num_hidden_layers": 4,
+    "dropout_rate": 0.08027867977904278,
+    "model_type": "FeedForward",
+    "num_neurons": 128,
+    "num_epochs": 2000,
+    "learning_rate": 2.3302276398176043e-05,
+    "weight_decay": 0.0006196092886338667,
+    "omega_eq": 1.0,
+    "omega_bc": 1.0,
+    "omega_dt": 1.0,
+    "output_dir": "runs_optuna/FeedForward/FeedForward_10_05___16_58"
+}

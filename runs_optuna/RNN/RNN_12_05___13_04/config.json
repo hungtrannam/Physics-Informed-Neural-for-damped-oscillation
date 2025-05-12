@@ -1,0 +1,17 @@
+{
+    "seed": 42,
+    "lr_scheduler": "plateau",
+    "nn_type": "TransformerEncoder",
+    "activation_name": "swish",
+    "num_hidden_layers": 6,
+    "dropout_rate": 0.01731133246886345,
+    "model_type": "RNN",
+    "num_neurons": 256,
+    "num_epochs": 2000,
+    "learning_rate": 0.00019512788324058166,
+    "weight_decay": 0.00039813351057956024,
+    "omega_eq": 1.0,
+    "omega_bc": 1.0,
+    "omega_dt": 1.0,
+    "output_dir": "runs_optuna/RNN/RNN_12_05___13_04"
+}

@@ -1,0 +1,17 @@
+{
+    "seed": 42,
+    "lr_scheduler": "plateau",
+    "nn_type": "TransformerEncoder",
+    "activation_name": "gelu",
+    "num_hidden_layers": 4,
+    "dropout_rate": 0.027255861861923025,
+    "model_type": "RNN",
+    "num_neurons": 256,
+    "num_epochs": 2000,
+    "learning_rate": 4.922043124158305e-05,
+    "weight_decay": 0.0009566697813896147,
+    "omega_eq": 1.0,
+    "omega_bc": 1.0,
+    "omega_dt": 1.0,
+    "output_dir": "runs_optuna/RNN/RNN_10_05___16_55"
+}

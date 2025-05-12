@@ -9,6 +9,20 @@ class tanhsig(nn.Module):
     def forward(self, x):
         return torch.tanh(x) * torch.sigmoid(x)
     
+class Sine(nn.Module):
+    def __init__(self):
+        super(Sine, self).__init__()
+
+    def forward(self, input):
+        return torch.sin(input)
+    
+class Cosine(nn.Module):
+    def __init__(self):
+        super(Cosine, self).__init__()
+
+    def forward(self, input):
+        return torch.cos(input)
+
 def get_activation(name):
     name = name.lower()
     if name == "relu":
@@ -25,5 +39,9 @@ def get_activation(name):
         return swish()
     elif name == "tanhsig":
         return tanhsig()
+    elif name == "sine":
+        return Sine()
+    elif name == "cosine":
+        return Cosine()
     else:
         raise ValueError(f"Unsupported activation: {name}")

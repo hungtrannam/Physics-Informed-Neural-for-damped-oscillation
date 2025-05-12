@@ -1,0 +1,19 @@
+{
+    "seed": 42,
+    "lr_scheduler": "plateau",
+    "nn_type": "TransformerEncoder",
+    "activation_name": "silu",
+    "num_hidden_layers": 7,
+    "dropout_rate": 0.04325953638563234,
+    "model_type": "TransformerEncoder",
+    "num_neurons": 32,
+    "num_epochs": 2000,
+    "learning_rate": 1.0865484443136044e-05,
+    "weight_decay": 0.00044923027628309276,
+    "omega_eq": 1.0,
+    "omega_bc": 1.0,
+    "omega_dt": 1.0,
+    "n_heads": 4,
+    "d_ff": 128,
+    "output_dir": "runs_optuna/TransformerEncoder/TransformerEncoder_10_05___16_59"
+}

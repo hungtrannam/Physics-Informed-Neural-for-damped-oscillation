@@ -1,0 +1,17 @@
+{
+    "seed": 42,
+    "lr_scheduler": "plateau",
+    "nn_type": "FeedForward",
+    "activation_name": "tanh",
+    "num_hidden_layers": 4,
+    "dropout_rate": 0.04040416510408223,
+    "model_type": "LSTM",
+    "num_neurons": 64,
+    "num_epochs": 2000,
+    "learning_rate": 2.6298359760674472e-05,
+    "weight_decay": 0.0008128451415711057,
+    "omega_eq": 1.0,
+    "omega_bc": 1.0,
+    "omega_dt": 1.0,
+    "output_dir": "runs_optuna/LSTM/LSTM_10_05___16_52"
+}

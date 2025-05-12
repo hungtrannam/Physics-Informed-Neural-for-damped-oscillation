@@ -1,0 +1,17 @@
+{
+    "seed": 42,
+    "lr_scheduler": "plateau",
+    "nn_type": "TransformerEncoder",
+    "activation_name": "swish",
+    "num_hidden_layers": 2,
+    "dropout_rate": 0.05205707940993304,
+    "model_type": "LSTM",
+    "num_neurons": 256,
+    "num_epochs": 2000,
+    "learning_rate": 5.052245462067826e-05,
+    "weight_decay": 0.00012954989592825627,
+    "omega_eq": 1.0,
+    "omega_bc": 1.0,
+    "omega_dt": 1.0,
+    "output_dir": "runs_optuna/LSTM/LSTM_10_05___16_58"
+}

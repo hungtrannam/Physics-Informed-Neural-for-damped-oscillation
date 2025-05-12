@@ -1,0 +1,17 @@
+{
+    "seed": 42,
+    "lr_scheduler": "plateau",
+    "nn_type": "TransformerEncoder",
+    "activation_name": "relu",
+    "num_hidden_layers": 8,
+    "dropout_rate": 0.1989662657889523,
+    "model_type": "FeedForward",
+    "num_neurons": 128,
+    "num_epochs": 2000,
+    "learning_rate": 0.00014022420346498124,
+    "weight_decay": 0.0007155198186513172,
+    "omega_eq": 1.0,
+    "omega_bc": 1.0,
+    "omega_dt": 1.0,
+    "output_dir": "runs_optuna/FeedForward/FeedForward_10_05___16_53"
+}
